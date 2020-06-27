@@ -27,23 +27,67 @@ string escape_string(string s) {
     return s;
 }
 
-string to_json(Value* v) {
+string parse_json_string(string s) {
+    stringstream ret;
+    s = s.substr(1, s.size() - 2); // remove quotes
+
+    bool after_backslash = false;
+    for (char& c : s) {
+        if (after_backslash) {
+            switch (c) {
+                case '"':
+                    ret << "\"";
+                    break;
+                case '\\':
+                    ret << "\\";
+                    break;
+                case '/':
+                    ret << "/";
+                    break;
+                case 'b':
+                    ret << "\b";
+                    break;
+                case 'f':
+                    ret << "\f";
+                case 'n':
+                    ret << "\n";
+                    break;
+                case 'r':
+                    ret << "\r";
+                    break;
+                case 't':
+                    ret << "\t";
+                    break;
+                default:
+                    throw exception {};
+            }
+            after_backslash = false;
+        } else if (c == '\\') {
+            after_backslash = true;
+        } else {
+            ret << c;
+        }
+    }
+    return ret.str();
+}
+
+
+string to_json(unique_ptr<Value> v) {
     stringstream ret;
     if (holds_alternative<map<string, unique_ptr<s>>>(*v)) {
         ret << "{";
         auto m = move(get<map<string, unique_ptr<s>>>(*v));
-        auto has_run = false;
+        auto times_run = 0;
         for (auto& kv : m) {
-            if (!has_run) {
+            if (times_run++) {
                 ret << ", ";
-                has_run = true;
             }
-            ret << "\"" << kv.first << "\"" << ": " << to_json(&(kv.second->v));
+            ret << "\"" << kv.first << "\"" << ": " << to_json(make_unique<Value>(move(kv.second->v)));
         }
         ret << "}";
     } else if (holds_alternative<int>(*v)) {
         auto n = move(get<int>(*v));
-        ret << n << endl;
+        ret << n;
     } else if (holds_alternative<string>(*v)) {
         ret << "\"";
         auto s = move(get<string>(*v));
@@ -52,13 +96,12 @@ string to_json(Value* v) {
     } else if (holds_alternative<vector<unique_ptr<s>>>(*v)) {
         ret << "[";
         auto vec = move(get<vector<unique_ptr<s>>>(*v));
-        auto has_run = false;
+        auto times_run = 0;
         for (auto& e : vec) {
-            if (!has_run) {
+            if (times_run++) {
                 ret << ", ";
-                has_run = true;
             }
-            ret << to_json(&(e->v));
+            ret << to_json(make_unique<Value>(move(e->v)));
         }
         ret << "]";
     }
@@ -72,9 +115,9 @@ enum command {
   create,     // 0
   push_back,  // 1
   number, // 2
-  push_string,
-  create_map,
-  push_back_map,
+  push_string, // 3
+  create_map,  // 4
+  push_back_map,  // 5
 };
 
 static int callout_handler(pcre2_callout_block *c, void *data) {
@@ -105,7 +148,7 @@ static int callout_handler(pcre2_callout_block *c, void *data) {
     int begin_offset = c->offset_vector[c->capture_last * 2];
     int end_offset   = c->offset_vector[c->capture_last * 2 + 1];
     string subject { (char*)c->subject };
-    Value val_str = subject.substr(begin_offset, end_offset - begin_offset);
+    Value val_str = parse_json_string(subject.substr(begin_offset, end_offset - begin_offset));
     st.push_back(make_unique<Value>(move(val_str)));
   } break;
   case create_map: {
@@ -136,8 +179,8 @@ int main() {
   pcre2_set_callout(match_context, callout_handler, nullptr);
   stringstream ss;
   ss << "(*NO_AUTO_POSSESS)(*NO_DOTSTAR_ANCHOR)(*NO_START_OPT)"
-        "\\A (?&digit_list) \\z"
-        /* "\\A (?&map) \\z" */
+        /* "\\A (?&digit_list) \\z" */
+        "\\A (?&map) \\z"
         "(?(DEFINE)"
         "(?<string> "
         "  ("
@@ -153,15 +196,15 @@ int main() {
         ")"
         "(?<digit_list> (?C" << create << ") ( (?&digit) (?C" << push_back << ") )* )"
         "(?<digit> (\\d) (?C" << number << ") )"
-        /* "(?<map> (?C" << create_map << ") \\{ (?&key) : (?&value) (?C" << push_back_map << ")" */
-        /* "( , (?&key) : (?&value) (?C" << push_back_map << "))* \\} )" */
-        /* "(?<key> (?&digit) )" */
-        /* "(?<value> (?&digit) )" */
+        "(?<map> (?C" << create_map << ") \\{ (?&key) : (?&value) (?C" << push_back_map << ")"
+        "( , (?&key) : (?&value) (?C" << push_back_map << "))* \\} )"
+        "(?<key> (?&string) )"
+        "(?<value> (?&digit) )"
         ")";
   auto ss_str = ss.str();
   auto pattern = reinterpret_cast<PCRE2_SPTR>(ss_str.c_str());
-  auto subject = reinterpret_cast<PCRE2_SPTR>("123");
-  /* auto subject = reinterpret_cast<PCRE2_SPTR>("{1:2,3:4}"); */
+  /* auto subject = reinterpret_cast<PCRE2_SPTR>("123"); */
+  auto subject = reinterpret_cast<PCRE2_SPTR>("{\"a\":2,\"b\":4}");
   auto subject_length = static_cast<PCRE2_SIZE>(strlen(reinterpret_cast<const char *>(subject)));
 
   int errornumber;
@@ -252,6 +295,7 @@ int main() {
     PCRE2_SIZE substring_length = ovector[2 * i + 1] - ovector[2 * i];
     /* cout << "%2d: %.*s\n", i, (int)substring_length, (char *)substring_start; */
   }
+  cout << to_json(move(st.back())) << endl;
 //   auto m = *static_cast<map<int, int> *>(st.back());
 //   for (const auto& kv : m) {
 //       cout << kv.first << ": " << kv.second << endl;
