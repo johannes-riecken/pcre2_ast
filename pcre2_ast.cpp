@@ -24,7 +24,39 @@ struct s {
 inline s::~s() = default;
 
 string escape_string(string s) {
-    return s;
+    stringstream ret;
+    ret << "\"";
+    for (char c : s) {
+        switch (c) {
+            case '"':
+                ret << "\\\"";
+                break;
+            case '\\':
+                ret << "\\\\";
+                break;
+            case '/':
+                ret << "\\/";
+                break;
+            case '\b':
+                ret << "\\b";
+                break;
+            case '\f':
+                ret << "\\f";
+                break;
+            case '\n':
+                ret << "\\n";
+            case '\r':
+                ret << "\\r";
+                break;
+            case '\t':
+                ret << "\\t";
+                break;
+            default:
+                ret << c;
+        }
+    }
+    ret << "\"";
+    return ret.str();
 }
 
 string parse_json_string(string s) {
@@ -32,7 +64,7 @@ string parse_json_string(string s) {
     s = s.substr(1, s.size() - 2); // remove quotes
 
     bool after_backslash = false;
-    for (char& c : s) {
+    for (char c : s) {
         if (after_backslash) {
             switch (c) {
                 case '"':
