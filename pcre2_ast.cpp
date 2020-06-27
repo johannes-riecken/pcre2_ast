@@ -23,6 +23,10 @@ struct s {
 };
 inline s::~s() = default;
 
+string escape_string(string s) {
+    return s;
+}
+
 string to_json(Value* v) {
     stringstream ret;
     if (holds_alternative<map<string, unique_ptr<s>>>(*v)) {
@@ -40,10 +44,26 @@ string to_json(Value* v) {
     } else if (holds_alternative<int>(*v)) {
         int n = move(get<int>(*v));
         ret << n << endl;
+    } else if (holds_alternative<string>(*v)) {
+        ret << "\"";
+        string s = move(get<string>(*v));
+        ret << escape_string(s);
+        ret << "\"";
+    } else if (holds_alternative<vector<unique_ptr<s>>>(*v)) {
+        ret << "[";
+        auto vec = move(get<vector<unique_ptr<s>>>(*v));
+        bool has_run = false;
+        for (unique_ptr<s>& e : vec) {
+            if (!has_run) {
+                ret << ", ";
+                has_run = true;
+            }
+            ret << to_json(&(e->v));
+        }
+        ret << "]";
     }
     return ret.str();
 }
-
 
 /* auto st = deque<void *>{}; */
 auto st = deque<unique_ptr<Value>>{};
