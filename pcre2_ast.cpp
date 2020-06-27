@@ -16,7 +16,7 @@
 using namespace std;
 
 struct s;
-using Value = variant<map<string, unique_ptr<s>>, int, string, vector<unique_ptr<s>>>;
+using Value = variant<map<string, unique_ptr<s>>, int, string, vector<unique_ptr<s>>, bool, monostate /*json null*/>;
 struct s {
     Value v;
     ~s();
@@ -156,10 +156,8 @@ string to_json(unique_ptr<Value> v) {
         auto n = move(get<int>(*v));
         ret << n;
     } else if (holds_alternative<string>(*v)) {
-        ret << "\"";
         auto s = move(get<string>(*v));
         ret << escape_string(s);
-        ret << "\"";
     } else if (holds_alternative<vector<unique_ptr<s>>>(*v)) {
         ret << "[";
         auto vec = move(get<vector<unique_ptr<s>>>(*v));
@@ -171,6 +169,11 @@ string to_json(unique_ptr<Value> v) {
             ret << to_json(make_unique<Value>(move(e->v)));
         }
         ret << "]";
+    } else if (holds_alternative<bool>(*v)) {
+      auto b = move(get<bool>(*v));
+      ret << (b ? "true" : "false");
+    } else if (holds_alternative<monostate>(*v)) {
+      ret << "null";
     }
     return ret.str();
 }
@@ -226,6 +229,15 @@ static int callout_handler(pcre2_callout_block *c, void *data) {
     mm[kk] = unique_ptr<s> { new s { .v = move(*v) } };
     st.push_back(make_unique<Value>(move(mm)));
   } break;
+  case push_true: {
+      st.push_back(move(make_unique<Value>(true)));
+  } break;
+  case push_false: {
+    st.push_back(move(make_unique<Value>(false)));
+  } break;
+  case push_null: {
+    st.push_back(move(make_unique<Value>(monostate {})));
+  } break;
   default: {
     cout << "Exception is exceptional" << endl;
     throw exception{};
@@ -239,9 +251,27 @@ int main() {
   pcre2_set_callout(match_context, callout_handler, nullptr);
   stringstream ss;
   ss << "(*NO_AUTO_POSSESS)(*NO_DOTSTAR_ANCHOR)(*NO_START_OPT)"
-        /* "\\A (?&digit_list) \\z" */
-        "\\A (?&map) \\z"
+        "\\A (?&json_val) \\z"
         "(?(DEFINE)"
+        "(?<json_val>"
+        "\\s*"
+        "("
+        "    (?&string)"
+        "  |"
+        "    (?&number)"
+        "  |"
+        "    (?&object)"
+        "  |"
+        "    (?&array)"
+        "  |"
+        "  true (?C" << push_true << ")"
+        "|"
+        "  false (?C" << push_false << ")"
+        "|"
+        "  null (?C" << push_null << ")"
+        ")"
+        "\\s*"
+        ")"
         "(?<string> "
         "  ("
         "    \""
@@ -254,12 +284,22 @@ int main() {
         "  )"
         "(?C" << push_string << ")"
         ")"
-        "(?<digit_list> (?C" << create << ") ( (?&digit) (?C" << push_back << ") )* )"
-        "(?<digit> (\\d) (?C" << number << ") )"
-        "(?<map> (?C" << create_map << ") \\{ (?&key) : (?&value) (?C" << push_back_map << ")"
+        "(?<object> \\{ (?C" << create_map << ") (?&key) : (?&value) (?C" << push_back_map << ")"
         "( , (?&key) : (?&value) (?C" << push_back_map << "))* \\} )"
         "(?<key> (?&string) )"
-        "(?<value> (?&digit) )"
+        "(?<value> (?&json_val) )"
+        "(?<number>"
+        "  ("
+        "    -?"
+        "    (?: 0 | [1-9]\\d* )"
+        "    (?: \\. \\d+ )?"
+        "    (?: [eE] [-+]? \\d+ )?"
+        "  )"
+        "  (?C" << number << ")"
+        ")"
+        "(?<array> \\[ (?C" << create << ") (?: (?&json_val) (?C" << push_back << ")"
+        "(?: , (?&json_val) (?C" << push_back << "))* )? \\] )"
+
         ")";
   auto ss_str = ss.str();
   auto pattern = reinterpret_cast<PCRE2_SPTR>(ss_str.c_str());
