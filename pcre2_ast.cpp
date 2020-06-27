@@ -32,8 +32,8 @@ string to_json(Value* v) {
     if (holds_alternative<map<string, unique_ptr<s>>>(*v)) {
         ret << "{";
         auto m = move(get<map<string, unique_ptr<s>>>(*v));
-        bool has_run = false;
-        for (pair<const string, unique_ptr<s>>& kv : m) {
+        auto has_run = false;
+        for (auto& kv : m) {
             if (!has_run) {
                 ret << ", ";
                 has_run = true;
@@ -42,18 +42,18 @@ string to_json(Value* v) {
         }
         ret << "}";
     } else if (holds_alternative<int>(*v)) {
-        int n = move(get<int>(*v));
+        auto n = move(get<int>(*v));
         ret << n << endl;
     } else if (holds_alternative<string>(*v)) {
         ret << "\"";
-        string s = move(get<string>(*v));
+        auto s = move(get<string>(*v));
         ret << escape_string(s);
         ret << "\"";
     } else if (holds_alternative<vector<unique_ptr<s>>>(*v)) {
         ret << "[";
         auto vec = move(get<vector<unique_ptr<s>>>(*v));
-        bool has_run = false;
-        for (unique_ptr<s>& e : vec) {
+        auto has_run = false;
+        for (auto& e : vec) {
             if (!has_run) {
                 ret << ", ";
                 has_run = true;
@@ -81,36 +81,32 @@ static int callout_handler(pcre2_callout_block *c, void *data) {
   cout << "Hello from callout number " << c->callout_number << endl;
   switch (c->callout_number) {
   case create: {
-    vector<unique_ptr<s>> v{};
-    Value val = move(v);
+    Value val = vector<unique_ptr<s>> {};
     st.push_back(make_unique<Value>(move(val)));
   } break;
   case push_back: {
     unique_ptr<Value> x = move(st.back());
-    Value xx = move(*x);
     st.pop_back();
     unique_ptr<Value> xs = move(st.back());
     vector<unique_ptr<s>> xxss = move(get<vector<unique_ptr<s>>>(*xs));
-    s my_struct { .v = move(xx) };
-    unique_ptr<s> unique_s = unique_ptr<s> { &my_struct };
+    unique_ptr<s> unique_s = unique_ptr<s>(new s { .v = move(*x) });
     xxss.push_back(move(unique_s));
-    Value res = move(xxss);
-    st.push_back(make_unique<Value>(move(res)));
+    st.push_back(make_unique<Value>(move(xxss)));
   } break;
   case number: {
     int begin_offset = c->offset_vector[c->capture_last * 2];
     int end_offset   = c->offset_vector[c->capture_last * 2 + 1];
     string subject { (char*)c->subject };
-    auto dummy_value_str = subject.substr(begin_offset, end_offset - begin_offset);
-    Value dummy_value = stoi(dummy_value_str);
-    st.push_back(make_unique<Value>(move(dummy_value)));
+    auto val_str = subject.substr(begin_offset, end_offset - begin_offset);
+    Value val = stoi(val_str);
+    st.push_back(make_unique<Value>(move(val)));
   } break;
   case push_string: {
     int begin_offset = c->offset_vector[c->capture_last * 2];
     int end_offset   = c->offset_vector[c->capture_last * 2 + 1];
     string subject { (char*)c->subject };
-    Value dummy_value_str = subject.substr(begin_offset, end_offset - begin_offset);
-    st.push_back(make_unique<Value>(move(dummy_value_str)));
+    Value val_str = subject.substr(begin_offset, end_offset - begin_offset);
+    st.push_back(make_unique<Value>(move(val_str)));
   } break;
   case create_map: {
     Value m = map<string, unique_ptr<s>> {};
@@ -118,22 +114,14 @@ static int callout_handler(pcre2_callout_block *c, void *data) {
   } break;
   case push_back_map: {
     unique_ptr<Value> v = move(st.back());
-    Value vv = move(*v);
     st.pop_back();
-    /* cout << "v is " << v << endl; */
     unique_ptr<Value> k = move(st.back());
     string kk = get<string>(*k);
     st.pop_back();
-    /* int k = *static_cast<int *>(st.back()); */
-    /* st.pop_back(); */
-    /* cout << "k is " << k << endl; */
     unique_ptr<Value> m = move(st.back());
     map<string, unique_ptr<s>> mm = move(get<map<string, unique_ptr<s>>>(*m));
-    /* cout << m->size() << endl; */
-    mm[kk] = unique_ptr<s> { new s { .v = move(vv) } };
-    /* (*m)[k] = v; */
-    Value mmm = move(mm);
-    st.push_back(make_unique<Value>(move(mmm)));
+    mm[kk] = unique_ptr<s> { new s { .v = move(*v) } };
+    st.push_back(make_unique<Value>(move(mm)));
   } break;
   default: {
     cout << "Exception is exceptional" << endl;
@@ -144,14 +132,6 @@ static int callout_handler(pcre2_callout_block *c, void *data) {
 }
 
 int main() {
-  /* dummy_handler(create); */
-  /* dummy_handler(number); */
-  /* dummy_handler(push_back); */
-  /* dummy_handler(number); */
-  /* dummy_handler(push_back); */
-  /* dummy_handler(number); */
-  /* dummy_handler(push_back); */
-
   pcre2_match_context *match_context = pcre2_match_context_create(nullptr);
   pcre2_set_callout(match_context, callout_handler, nullptr);
   stringstream ss;
