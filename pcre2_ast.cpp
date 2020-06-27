@@ -285,7 +285,7 @@ int main() {
         "(?C" << push_string << ")"
         ")"
         "(?<object> \\{ (?C" << create_map << ") ( (?&key) : (?&value) (?C" << push_back_map << ")"
-        "( , (?&key) : (?&value) (?C" << push_back_map << "))* )? \\} )"
+        "( , \\s* (?&key) : (?&value) (?C" << push_back_map << "))* )? \\} )"
         "(?<key> (?&string) )"
         "(?<value> (?&json_val) )"
         "(?<number>"
