@@ -189,6 +189,7 @@ static int callout_handler(pcre2_callout_block *c, void *data) {
     unique_ptr<Value> x = move(st.back());
     st.pop_back();
     unique_ptr<Value> xs = move(st.back());
+    st.pop_back();
     vector<unique_ptr<s>> xxss = move(get<vector<unique_ptr<s>>>(*xs));
     unique_ptr<s> unique_s = unique_ptr<s>(new s { .v = move(*x) });
     xxss.push_back(move(unique_s));
@@ -220,6 +221,7 @@ static int callout_handler(pcre2_callout_block *c, void *data) {
     string kk = get<string>(*k);
     st.pop_back();
     unique_ptr<Value> m = move(st.back());
+    st.pop_back();
     map<string, unique_ptr<s>> mm = move(get<map<string, unique_ptr<s>>>(*m));
     mm[kk] = unique_ptr<s> { new s { .v = move(*v) } };
     st.push_back(make_unique<Value>(move(mm)));
