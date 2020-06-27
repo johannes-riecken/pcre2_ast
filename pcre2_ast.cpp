@@ -23,6 +23,41 @@ struct s {
 };
 inline s::~s() = default;
 
+enum command {
+  create,
+  push_back,
+  number,
+  push_string,
+  create_map,
+  push_back_map,
+  push_true,
+  push_false,
+  push_null,
+};
+
+string command_to_string(command c) {
+  switch (c) {
+  case create:
+    return "create";
+  case push_back:
+    return "push_back";
+  case number:
+    return "number";
+  case push_string:
+    return "push_string";
+  case create_map:
+    return "create_map";
+  case push_back_map:
+    return "push_back_map";
+  case push_true:
+    return "push_true";
+  case push_false:
+    return "push_false";
+  case push_null:
+    return "push_null";
+  }
+}
+
 string escape_string(string s) {
     stringstream ret;
     ret << "\"";
@@ -143,17 +178,8 @@ string to_json(unique_ptr<Value> v) {
 /* auto st = deque<void *>{}; */
 auto st = deque<unique_ptr<Value>>{};
 
-enum command {
-  create,     // 0
-  push_back,  // 1
-  number, // 2
-  push_string, // 3
-  create_map,  // 4
-  push_back_map,  // 5
-};
-
 static int callout_handler(pcre2_callout_block *c, void *data) {
-  cout << "Hello from callout number " << c->callout_number << endl;
+  cout << command_to_string(static_cast<command>(c->callout_number)) << endl;
   switch (c->callout_number) {
   case create: {
     Value val = vector<unique_ptr<s>> {};
