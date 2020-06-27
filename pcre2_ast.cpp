@@ -16,7 +16,7 @@
 using namespace std;
 
 struct s;
-using Value = variant<map<string, unique_ptr<s>>, int, string, vector<unique_ptr<s>>, bool, monostate /*json null*/>;
+using Value = variant<map<string, unique_ptr<s>>, double, string, vector<unique_ptr<s>>, bool, monostate /*json null*/>;
 struct s {
     Value v;
     ~s();
@@ -152,8 +152,8 @@ string to_json(unique_ptr<Value> v) {
             ret << "\"" << kv.first << "\"" << ": " << to_json(make_unique<Value>(move(kv.second->v)));
         }
         ret << "}";
-    } else if (holds_alternative<int>(*v)) {
-        auto n = move(get<int>(*v));
+    } else if (holds_alternative<double>(*v)) {
+        auto n = move(get<double>(*v));
         ret << n;
     } else if (holds_alternative<string>(*v)) {
         auto s = move(get<string>(*v));
@@ -203,7 +203,7 @@ static int callout_handler(pcre2_callout_block *c, void *data) {
     int end_offset   = c->offset_vector[c->capture_last * 2 + 1];
     string subject { (char*)c->subject };
     auto val_str = subject.substr(begin_offset, end_offset - begin_offset);
-    Value val = stoi(val_str);
+    Value val = stod(val_str);
     st.push_back(make_unique<Value>(move(val)));
   } break;
   case push_string: {
