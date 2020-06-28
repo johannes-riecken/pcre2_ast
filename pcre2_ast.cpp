@@ -13,7 +13,7 @@
 
 #include <pcre2.h>
 
-constexpr int is_debug = 0;
+constexpr bool is_debug = false;
 
 using namespace std;
 
@@ -66,7 +66,7 @@ string command_to_string(command c) {
   }
 }
 
-string escape_string(string s) {
+string escape_string(const string& s) {
     stringstream ret;
     ret << "\"";
     for (char c : s) {
@@ -161,7 +161,7 @@ string to_json(unique_ptr<JsonValue> v) {
         }
         ret << "}";
     } else if (holds_alternative<double>(*v)) {
-        auto n = move(get<double>(*v));
+        auto n = get<double>(*v);
         ret << n;
     } else if (holds_alternative<string>(*v)) {
         auto str = move(get<string>(*v));
@@ -178,7 +178,7 @@ string to_json(unique_ptr<JsonValue> v) {
         }
         ret << "]";
     } else if (holds_alternative<bool>(*v)) {
-      auto b = move(get<bool>(*v));
+      auto b = get<bool>(*v);
       ret << (b ? "true" : "false");
     } else if (holds_alternative<monostate>(*v)) {
       ret << "null";
@@ -251,7 +251,7 @@ static int callout_handler(pcre2_callout_block *c, void *data) {
 }
 
 
-unique_ptr<JsonValue> from_json(string str) {
+unique_ptr<JsonValue> from_json(const string& str) {
   pcre2_match_context *match_context = pcre2_match_context_create(nullptr);
   pcre2_set_callout(match_context, callout_handler, nullptr);
   stringstream ss;
@@ -345,13 +345,10 @@ unique_ptr<JsonValue> from_json(string str) {
   /* Matching failed: handle error cases */
 
   if (rc < 0) {
-    switch (rc) {
-    case PCRE2_ERROR_NOMATCH:
+    if (rc == PCRE2_ERROR_NOMATCH) {
         cout << "No match" << endl;
-      break;
-    default:
+    } else {
       cout << "Matching error: " << rc << endl;
-      break;
     }
     pcre2_match_data_free(match_data); /* Release memory used for the match */
     pcre2_code_free(re);               /*   data and the compiled pattern. */
@@ -394,6 +391,6 @@ unique_ptr<JsonValue> from_json(string str) {
 }
 int main() {
   cout << to_json(from_json("[1,2,3]")) << endl;
-  cout << to_json(from_json("{\"a\":[1,2,3.14], \"b\":null, \"c\":{\"d\":[true,false]}}")) << endl;
+  cout << to_json(from_json(R"({"a":[1,2,3.14], "b":null, "c":{"d":[true,false]}})")) << endl;
   return 0;
 }
