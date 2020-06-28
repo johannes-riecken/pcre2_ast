@@ -13,6 +13,8 @@
 
 #include <pcre2.h>
 
+constexpr int is_debug = 0;
+
 using namespace std;
 
 struct s;
@@ -184,11 +186,12 @@ string to_json(unique_ptr<JsonValue> v) {
     return ret.str();
 }
 
-/* auto st = deque<void *>{}; */
 auto st = deque<unique_ptr<JsonValue>>{};
 
 static int callout_handler(pcre2_callout_block *c, void *data) {
-  cout << command_to_string(static_cast<command>(c->callout_number)) << endl;
+  if (is_debug) {
+    cout << command_to_string(static_cast<command>(c->callout_number)) << endl;
+  }
   switch (c->callout_number) {
   case create_array: {
     JsonValue val = vector<unique_ptr<s>> {};
@@ -247,7 +250,8 @@ static int callout_handler(pcre2_callout_block *c, void *data) {
   return 0;
 }
 
-int main() {
+
+unique_ptr<JsonValue> from_json(string str) {
   pcre2_match_context *match_context = pcre2_match_context_create(nullptr);
   pcre2_set_callout(match_context, callout_handler, nullptr);
   stringstream ss;
@@ -302,9 +306,10 @@ int main() {
         "(?: , (?&json_val) (?C" << push_back_array << "))* )? \\] )"
 
         ")";
+  // most of the following code is copied from libpcre2's pcre2demo.c
   auto ss_str = ss.str();
   auto pattern = reinterpret_cast<PCRE2_SPTR>(ss_str.c_str());
-  auto subject = reinterpret_cast<PCRE2_SPTR>("{\"a\":[1,2,3.14], \"b\":null, \"c\":{\"d\":[true,false]}}");
+  auto subject = reinterpret_cast<PCRE2_SPTR>(str.c_str());
   auto subject_length = static_cast<PCRE2_SIZE>(strlen(reinterpret_cast<const char *>(subject)));
 
   int errornumber;
@@ -322,7 +327,7 @@ int main() {
     pcre2_get_error_message(errornumber, buffer.data(), buffer.size());
     cout << "PCRE2 compilation failed at offset " << erroroffset << ": "
          << buffer.data() << endl;
-    return 1;
+    return nullptr;
   }
 
   pcre2_match_data *match_data =
@@ -350,14 +355,13 @@ int main() {
     }
     pcre2_match_data_free(match_data); /* Release memory used for the match */
     pcre2_code_free(re);               /*   data and the compiled pattern. */
-    return 1;
+    return nullptr;
   }
 
   /* Match succeded. Get a pointer to the output vector, where string offsets
   are stored. */
 
   PCRE2_SIZE *ovector = pcre2_get_ovector_pointer(match_data);
-  cout << "Match succeeded at offset" << static_cast<int>(ovector[0]) << endl;
 
   /*************************************************************************
    * We have found the first match within the subject string. If the output *
@@ -384,25 +388,12 @@ int main() {
     cout << "Run abandoned" << endl;
     pcre2_match_data_free(match_data);
     pcre2_code_free(re);
-    return 1;
+    return nullptr;
   }
-
-  /* Show substrings stored in the output vector by push_number. Obviously, in a real
-  application you might want to do things other than print them. */
-
-  for (int i = 0; i < rc; i++) {
-    PCRE2_SPTR substring_start = subject + ovector[2 * i];
-    PCRE2_SIZE substring_length = ovector[2 * i + 1] - ovector[2 * i];
-    /* cout << "%2d: %.*s\n", i, (int)substring_length, (char *)substring_start; */
-  }
-  cout << to_json(move(st.back())) << endl;
-//   auto m = *static_cast<map<int, int> *>(st.back());
-//   for (const auto& kv : m) {
-//       cout << kv.first << ": " << kv.second << endl;
-//   }
-//   /* auto v = (*static_cast<vector<int> *>(st.back())); */
-//   /* for (int i : v) { */
-//   /*     cout << i << endl; */
-//   /* } */
+  return move(st.back());
+}
+int main() {
+  cout << to_json(from_json("[1,2,3]")) << endl;
+  cout << to_json(from_json("{\"a\":[1,2,3.14], \"b\":null, \"c\":{\"d\":[true,false]}}")) << endl;
   return 0;
 }
