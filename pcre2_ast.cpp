@@ -16,17 +16,23 @@
 using namespace std;
 
 struct s;
-using Value = variant<map<string, unique_ptr<s>>, double, string, vector<unique_ptr<s>>, bool, monostate /*json null*/>;
+using JsonValue = variant<
+  map<string, unique_ptr<s>>,
+  double,
+  string,
+  vector<unique_ptr<s>>,
+  bool,
+  monostate /*json null*/>;
 struct s {
-    Value v;
+    JsonValue v;
     ~s();
 };
 inline s::~s() = default;
 
 enum command {
-  create,
-  push_back,
-  number,
+  create_array,
+  push_back_array,
+  push_number,
   push_string,
   create_map,
   push_back_map,
@@ -37,12 +43,12 @@ enum command {
 
 string command_to_string(command c) {
   switch (c) {
-  case create:
-    return "create";
-  case push_back:
-    return "push_back";
-  case number:
-    return "number";
+  case create_array:
+    return "create_array";
+  case push_back_array:
+    return "push_back_array";
+  case push_number:
+    return "push_number";
   case push_string:
     return "push_string";
   case create_map:
@@ -139,7 +145,7 @@ string parse_json_string(string s) {
 }
 
 
-string to_json(unique_ptr<Value> v) {
+string to_json(unique_ptr<JsonValue> v) {
     stringstream ret;
     if (holds_alternative<map<string, unique_ptr<s>>>(*v)) {
         ret << "{";
@@ -149,15 +155,15 @@ string to_json(unique_ptr<Value> v) {
             if (times_run++) {
                 ret << ", ";
             }
-            ret << "\"" << kv.first << "\"" << ": " << to_json(make_unique<Value>(move(kv.second->v)));
+            ret << "\"" << kv.first << "\"" << ": " << to_json(make_unique<JsonValue>(move(kv.second->v)));
         }
         ret << "}";
     } else if (holds_alternative<double>(*v)) {
         auto n = move(get<double>(*v));
         ret << n;
     } else if (holds_alternative<string>(*v)) {
-        auto s = move(get<string>(*v));
-        ret << escape_string(s);
+        auto str = move(get<string>(*v));
+        ret << escape_string(str);
     } else if (holds_alternative<vector<unique_ptr<s>>>(*v)) {
         ret << "[";
         auto vec = move(get<vector<unique_ptr<s>>>(*v));
@@ -166,7 +172,7 @@ string to_json(unique_ptr<Value> v) {
             if (times_run++) {
                 ret << ", ";
             }
-            ret << to_json(make_unique<Value>(move(e->v)));
+            ret << to_json(make_unique<JsonValue>(move(e->v)));
         }
         ret << "]";
     } else if (holds_alternative<bool>(*v)) {
@@ -179,64 +185,59 @@ string to_json(unique_ptr<Value> v) {
 }
 
 /* auto st = deque<void *>{}; */
-auto st = deque<unique_ptr<Value>>{};
+auto st = deque<unique_ptr<JsonValue>>{};
 
 static int callout_handler(pcre2_callout_block *c, void *data) {
   cout << command_to_string(static_cast<command>(c->callout_number)) << endl;
   switch (c->callout_number) {
-  case create: {
-    Value val = vector<unique_ptr<s>> {};
-    st.push_back(make_unique<Value>(move(val)));
+  case create_array: {
+    JsonValue val = vector<unique_ptr<s>> {};
+    st.push_back(make_unique<JsonValue>(move(val)));
   } break;
-  case push_back: {
-    unique_ptr<Value> x = move(st.back());
+  case push_back_array: {
+    unique_ptr<JsonValue> x = move(st.back());
     st.pop_back();
-    unique_ptr<Value> xs = move(st.back());
+    unique_ptr<JsonValue> vec_variant = move(st.back());
     st.pop_back();
-    vector<unique_ptr<s>> xxss = move(get<vector<unique_ptr<s>>>(*xs));
-    unique_ptr<s> unique_s = unique_ptr<s>(new s { .v = move(*x) });
-    xxss.push_back(move(unique_s));
-    st.push_back(make_unique<Value>(move(xxss)));
+    vector<unique_ptr<s>> vec = move(get<vector<unique_ptr<s>>>(*vec_variant));
+    vec.push_back(unique_ptr<s>(new s { .v = move(*x) }));
+    st.push_back(make_unique<JsonValue>(move(vec)));
   } break;
-  case number: {
-    int begin_offset = c->offset_vector[c->capture_last * 2];
-    int end_offset   = c->offset_vector[c->capture_last * 2 + 1];
+  case push_number: {
+    auto begin_offset = c->offset_vector[c->capture_last * 2];
+    auto end_offset   = c->offset_vector[c->capture_last * 2 + 1];
     string subject { (char*)c->subject };
     auto val_str = subject.substr(begin_offset, end_offset - begin_offset);
-    Value val = stod(val_str);
-    st.push_back(make_unique<Value>(move(val)));
+    st.push_back(make_unique<JsonValue>(stod(val_str)));
   } break;
   case push_string: {
-    int begin_offset = c->offset_vector[c->capture_last * 2];
-    int end_offset   = c->offset_vector[c->capture_last * 2 + 1];
+    auto begin_offset = c->offset_vector[c->capture_last * 2];
+    auto end_offset   = c->offset_vector[c->capture_last * 2 + 1];
     string subject { (char*)c->subject };
-    Value val_str = parse_json_string(subject.substr(begin_offset, end_offset - begin_offset));
-    st.push_back(make_unique<Value>(move(val_str)));
+    JsonValue val_str = parse_json_string(subject.substr(begin_offset, end_offset - begin_offset));
+    st.push_back(make_unique<JsonValue>(move(val_str)));
   } break;
   case create_map: {
-    Value m = map<string, unique_ptr<s>> {};
-    st.push_back(make_unique<Value>(move(m)));
+    st.push_back(make_unique<JsonValue>(map<string, unique_ptr<s>> {}));
   } break;
   case push_back_map: {
-    unique_ptr<Value> v = move(st.back());
+    unique_ptr<JsonValue> v = move(st.back());
     st.pop_back();
-    unique_ptr<Value> k = move(st.back());
-    string kk = get<string>(*k);
+    string k = get<string>(*move(st.back()));
     st.pop_back();
-    unique_ptr<Value> m = move(st.back());
+    map<string, unique_ptr<s>> m = move(get<map<string, unique_ptr<s>>>(*st.back()));
     st.pop_back();
-    map<string, unique_ptr<s>> mm = move(get<map<string, unique_ptr<s>>>(*m));
-    mm[kk] = unique_ptr<s> { new s { .v = move(*v) } };
-    st.push_back(make_unique<Value>(move(mm)));
+    m[k] = unique_ptr<s> { new s { .v = move(*v) } };
+    st.push_back(make_unique<JsonValue>(move(m)));
   } break;
   case push_true: {
-      st.push_back(move(make_unique<Value>(true)));
+      st.push_back(move(make_unique<JsonValue>(true)));
   } break;
   case push_false: {
-    st.push_back(move(make_unique<Value>(false)));
+    st.push_back(move(make_unique<JsonValue>(false)));
   } break;
   case push_null: {
-    st.push_back(move(make_unique<Value>(monostate {})));
+    st.push_back(move(make_unique<JsonValue>(monostate {})));
   } break;
   default: {
     cout << "Exception is exceptional" << endl;
@@ -258,7 +259,7 @@ int main() {
         "("
         "    (?&string)"
         "  |"
-        "    (?&number)"
+        "    (?&push_number)"
         "  |"
         "    (?&object)"
         "  |"
@@ -288,23 +289,22 @@ int main() {
         "( , \\s* (?&key) : (?&value) (?C" << push_back_map << "))* )? \\} )"
         "(?<key> (?&string) )"
         "(?<value> (?&json_val) )"
-        "(?<number>"
+        "(?<push_number>"
         "  ("
         "    -?"
         "    (?: 0 | [1-9]\\d* )"
         "    (?: \\. \\d+ )?"
         "    (?: [eE] [-+]? \\d+ )?"
         "  )"
-        "  (?C" << number << ")"
+        "  (?C" << push_number << ")"
         ")"
-        "(?<array> \\[ (?C" << create << ") (?: (?&json_val) (?C" << push_back << ")"
-        "(?: , (?&json_val) (?C" << push_back << "))* )? \\] )"
+        "(?<array> \\[ (?C" << create_array << ") (?: (?&json_val) (?C" << push_back_array << ")"
+        "(?: , (?&json_val) (?C" << push_back_array << "))* )? \\] )"
 
         ")";
   auto ss_str = ss.str();
   auto pattern = reinterpret_cast<PCRE2_SPTR>(ss_str.c_str());
-  /* auto subject = reinterpret_cast<PCRE2_SPTR>("123"); */
-  auto subject = reinterpret_cast<PCRE2_SPTR>("{\"a\":2,\"b\":4}");
+  auto subject = reinterpret_cast<PCRE2_SPTR>("{\"a\":[1,2,3.14], \"b\":null, \"c\":{\"d\":[true,false]}}");
   auto subject_length = static_cast<PCRE2_SIZE>(strlen(reinterpret_cast<const char *>(subject)));
 
   int errornumber;
@@ -312,7 +312,7 @@ int main() {
   pcre2_code *re = pcre2_compile(
       pattern,                      /* the pattern */
       PCRE2_ZERO_TERMINATED,        /* indicates pattern is zero-terminated */
-      PCRE2_EXTENDED, &errornumber, /* for error number */
+      PCRE2_EXTENDED, &errornumber, /* for error push_number */
       &erroroffset,                 /* for error offset */
       nullptr);                     /* use default compile context */
 
@@ -387,7 +387,7 @@ int main() {
     return 1;
   }
 
-  /* Show substrings stored in the output vector by number. Obviously, in a real
+  /* Show substrings stored in the output vector by push_number. Obviously, in a real
   application you might want to do things other than print them. */
 
   for (int i = 0; i < rc; i++) {
@@ -404,6 +404,5 @@ int main() {
 //   /* for (int i : v) { */
 //   /*     cout << i << endl; */
 //   /* } */
-  cout << "Still running though" << endl;
   return 0;
 }
