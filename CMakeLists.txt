@@ -8,7 +8,7 @@ find_library(PCRE2_LIBRARY_RELEASE NAMES pcre2-8 HINTS ${INSTALLED_LIB_PATH})
 # add the executable
 add_executable(pcre2_ast pcre2_ast.cpp)
 
-target_link_libraries(pcre2_ast PUBLIC ${PCRE2_LIBRARY})
+target_link_libraries(pcre2_ast PUBLIC ${PCRE2_LIBRARY_RELEASE})
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
+target_compile_features(pcre2_ast PUBLIC cxx_std_17)
+
