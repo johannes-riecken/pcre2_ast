@@ -1,3 +1,4 @@
+#include <map>
 #include <memory>
 #include <string>
 #include <variant>
@@ -7,10 +8,10 @@ using namespace std;
 
 struct s;
 using JsonValue = variant<
-  map<string, unique_ptr<s>>,
+  map<string, unique_ptr<s> >,
   double,
   string,
-  vector<unique_ptr<s>>,
+  vector<unique_ptr<s> >,
   bool,
   monostate /*json null*/>;
 struct s {
