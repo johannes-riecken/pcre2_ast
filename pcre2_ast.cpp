@@ -341,6 +341,7 @@ unique_ptr<JsonValue> from_json(const string& str) {
     }
     pcre2_match_data_free(match_data); /* Release memory used for the match */
     pcre2_code_free(re);               /*   data and the compiled pattern. */
+    pcre2_match_context_free(match_context);
     return nullptr;
   }
 
@@ -374,8 +375,12 @@ unique_ptr<JsonValue> from_json(const string& str) {
     cout << "Run abandoned" << endl;
     pcre2_match_data_free(match_data);
     pcre2_code_free(re);
+    pcre2_match_context_free(match_context);
     return nullptr;
   }
+  pcre2_match_data_free(match_data);
+  pcre2_code_free(re);
+  pcre2_match_context_free(match_context);
   return move(st.back());
 }
 // int main() {
