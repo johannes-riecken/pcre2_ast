@@ -13,23 +13,12 @@
 
 #include <pcre2.h>
 
+#include "pcre2_ast.h"
+
 constexpr bool is_debug = false;
 
 using namespace std;
 
-struct s;
-using JsonValue = variant<
-  map<string, unique_ptr<s>>,
-  double,
-  string,
-  vector<unique_ptr<s>>,
-  bool,
-  monostate /*json null*/>;
-struct s {
-    JsonValue v;
-    ~s();
-};
-inline s::~s() = default;
 
 enum command {
   create_array,
@@ -378,7 +367,7 @@ unique_ptr<JsonValue> from_json(const string& str) {
   demonstration program, we just detect this case and give up. */
 
   if (ovector[0] > ovector[1]) {
-    cout << 
+    cout <<
         "\\K was used in an assertion to set the match start after its end.\n";
         /* "From end to start the match was: %.*s\n", */
         /* (int)(ovector[0] - ovector[1]), (char *)(subject + ovector[1]); */
