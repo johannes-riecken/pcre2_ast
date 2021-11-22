@@ -378,8 +378,8 @@ unique_ptr<JsonValue> from_json(const string& str) {
   }
   return move(st.back());
 }
-int main() {
-  cout << to_json(from_json("[1,2,3]")) << endl;
-  cout << to_json(from_json(R"({"a":[1,2,3.14], "b":null, "c":{"d":[true,false]}})")) << endl;
-  return 0;
-}
+// int main() {
+//   cout << to_json(from_json("[1,2,3]")) << endl;
+//   cout << to_json(from_json(R"({"a":[1,2,3.14], "b":null, "c":{"d":[true,false]}})")) << endl;
+//   return 0;
+// }
