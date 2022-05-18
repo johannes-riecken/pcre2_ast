@@ -1,0 +1,8 @@
+base:
+  language: c++
+  deps:
+    # install needed dependencies here
+    # - apt install -y libfmt-dev
+
+  steps:
+    $CXX $CXXFLAGS -std=c++17 fuzzer.cc $LIB_FUZZING_ENGINE pcre2_ast/build/libpcre2_ast.a -lpcre2-8
