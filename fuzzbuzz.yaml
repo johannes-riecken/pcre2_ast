@@ -6,7 +6,7 @@ base:
     # - apt install -y libfmt-dev
 
   steps:
-    $CXX $CXXFLAGS -std=c++17 fuzzer.cc $LIB_FUZZING_ENGINE pcre2_ast/build/libpcre2_ast.a -lpcre2-8
+    $CXX $CXXFLAGS -std=c++17 -o pcre2_ast-fuzzer -fsanitize=fuzzer fuzzer.cc $LIB_FUZZING_ENGINE pcre2_ast/build/libpcre2_ast.a -lpcre2-8
   sanitizers:
     address: {}
     undefined: {}
