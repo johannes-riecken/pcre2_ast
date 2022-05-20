@@ -16,9 +16,9 @@ jobs:
       matrix:
         sanitizer:
         - address
-        # Override this with the sanitizers you want.
-        # - undefined
-        # - memory
+        - undefined
+        - memory
+        - coverage
     steps:
     - name: Build Fuzzers (${{ matrix.sanitizer }})
       id: build
@@ -30,11 +30,9 @@ jobs:
       uses: google/clusterfuzzlite/actions/run_fuzzers@v1
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
-        fuzz-seconds: 3600
-        mode: 'batch'
+        fuzz-seconds: 300
+        mode: 'coverage'
         sanitizer: ${{ matrix.sanitizer }}
-        # Optional but recommended: For storing certain artifacts from fuzzing.
-        # See later section on "Git repo for storage".
         storage-repo: https://${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com/johannes-riecken/pcre2_ast-storage.git
         storage-repo-branch: main   # Optional. Defaults to "main"
         storage-repo-branch-coverage: gh-pages  # Optional. Defaults to "gh-pages".
