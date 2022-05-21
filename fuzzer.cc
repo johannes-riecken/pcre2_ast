@@ -13,7 +13,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 }
 
 extern "C" int FuzzOneInput(const uint8_t *data, size_t size) {
-  string s = "[1, 2, 3]";
+  string s( reinterpret_cast<char const*>(data), size ) ;
   if (to_json(from_json(s)) != s)
     __builtin_trap();
   return 0;
