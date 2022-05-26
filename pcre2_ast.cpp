@@ -52,6 +52,8 @@ string command_to_string(command c) {
     return "push_false";
   case push_null:
     return "push_null";
+  default:
+    __builtin_trap();
   }
 }
 
