@@ -5,7 +5,7 @@
 
 using namespace std;
 
-#include "pcre2_ast.h"
+#include "pcre2_ast.hpp"
 
 int main() {
   string s = "[1,2,3]";

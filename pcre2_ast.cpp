@@ -13,7 +13,7 @@
 
 #include <pcre2.h>
 
-#include "pcre2_ast.h"
+#include "pcre2_ast.hpp"
 
 constexpr bool is_debug = false;
 

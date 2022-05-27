@@ -3,7 +3,7 @@
 #include <string.h>
 #include <iostream>
 
-#include "pcre2_ast.h"
+#include "pcre2_ast.hpp"
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
   string s = "[1, 2, 3]";
