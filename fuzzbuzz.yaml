@@ -1,12 +1,6 @@
-base:
+pcre2_ast:
   language: c++
   engine: libFuzzer
-  deps:
-    # install needed dependencies here
-    # - apt install -y libfmt-dev
-
   steps:
-    $CXX $CXXFLAGS -std=c++17 -o pcre2_ast-fuzzer -fsanitize=fuzzer fuzzer.cc $LIB_FUZZING_ENGINE pcre2_ast/build/libpcre2_ast.a -lpcre2-8
-  sanitizers:
-    address: {}
-    undefined: {}
+  - run: $CXX $CXXFLAGS -std=c++17 $SRC/pcre2_ast/fuzzer.cc -o $OUT/fuzzer $LIB_FUZZING_ENGINE
+      $SRC/pcre2_ast/build/libpcre2_ast.a -lpcre2-8
