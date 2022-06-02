@@ -2,6 +2,8 @@ pcre2_ast:
   language: c++
   engine: libFuzzer
   steps:
+  - run: apt update
+  - run: apt install -y cmake
   - run: mkdir build
   - run: cd build
   - run: cmake ..
