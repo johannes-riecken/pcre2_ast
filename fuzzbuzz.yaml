@@ -2,5 +2,10 @@ pcre2_ast:
   language: c++
   engine: libFuzzer
   steps:
-  - run: $CXX $CXXFLAGS -std=c++17 fuzzer.cc -o $OUT/fuzzer $LIB_FUZZING_ENGINE
-      libpcre2_ast.a -lpcre2-8
+  - run: mkdir build
+  - run: cd build
+  - run: cmake ..
+  - run: make
+  - run: cd ..
+  - run: $CXX $CXXFLAGS -std=c++17 fuzzer.cc -o $OUT/fuzzer $LIB_FUZZING_ENGINE libpcre2_ast.a
+      -lpcre2-8
