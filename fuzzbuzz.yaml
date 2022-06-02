@@ -3,7 +3,7 @@ pcre2_ast:
   engine: libFuzzer
   steps:
   - run: apt update
-  - run: apt install -y cmake
+  - run: apt install -y cmake libpcre2-dev
   - run: mkdir build && cd build && cmake .. && make
   - run: $CXX $CXXFLAGS -std=c++17 fuzzer.cc -o $OUT/fuzzer $LIB_FUZZING_ENGINE libpcre2_ast.a
       -lpcre2-8
