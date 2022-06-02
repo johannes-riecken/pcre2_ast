@@ -5,5 +5,5 @@ pcre2_ast:
   - run: apt update
   - run: apt install -y cmake libpcre2-dev
   - run: mkdir build && cd build && cmake .. && make
-  - run: $CXX $CXXFLAGS -std=c++17 fuzzer.cc -o fuzzer $LIB_FUZZING_ENGINE build/libpcre2_ast.a
+  - run: $CXX $CXXFLAGS -std=c++17 fuzzer.cc -o fuzzer -fsanitize=fuzzer build/libpcre2_ast.a
       -lpcre2-8
