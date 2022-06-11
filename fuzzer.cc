@@ -7,7 +7,11 @@
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
   string s( reinterpret_cast<char const*>(data), size ) ;
-  if (to_json(from_json(s)) != s)
-    __builtin_trap();
-  return 0;
+    auto v = from_json(s);
+    if (v != nullptr) {
+        if (to_json(std::move(v)) != s)
+            __builtin_trap();
+    }
+
+    return 0;
 }
