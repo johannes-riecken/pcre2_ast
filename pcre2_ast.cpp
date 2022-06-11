@@ -316,8 +316,8 @@ unique_ptr<JsonValue> from_json(const string& str) {
     constexpr int BUF_SZ = 256;
     array<PCRE2_UCHAR, BUF_SZ> buffer {};
     pcre2_get_error_message(errornumber, buffer.data(), buffer.size());
-    cout << "PCRE2 compilation failed at offset " << erroroffset << ": "
-         << buffer.data() << endl;
+    /* cout << "PCRE2 compilation failed at offset " << erroroffset << ": " */
+    /*      << buffer.data() << endl; */
     return nullptr;
   }
 
@@ -337,9 +337,9 @@ unique_ptr<JsonValue> from_json(const string& str) {
 
   if (rc < 0) {
     if (rc == PCRE2_ERROR_NOMATCH) {
-        cout << "No match" << endl;
+        /* cout << "No match" << endl; */
     } else {
-      cout << "Matching error: " << rc << endl;
+      /* cout << "Matching error: " << rc << endl; */
     }
     pcre2_match_data_free(match_data); /* Release memory used for the match */
     pcre2_code_free(re);               /*   data and the compiled pattern. */
@@ -362,7 +362,7 @@ unique_ptr<JsonValue> from_json(const string& str) {
   used pcre2_match_data_create_from_pattern() above. */
 
   if (rc == 0) {
-      cout << "ovector was not big enough for all the captured substrings" << endl;
+      /* cout << "ovector was not big enough for all the captured substrings" << endl; */
   }
 
   /* We must guard against patterns such as /(?=.\K)/ that use \K in an
@@ -370,11 +370,11 @@ unique_ptr<JsonValue> from_json(const string& str) {
   demonstration program, we just detect this case and give up. */
 
   if (ovector[0] > ovector[1]) {
-    cout <<
-        "\\K was used in an assertion to set the match start after its end.\n";
-        /* "From end to start the match was: %.*s\n", */
-        /* (int)(ovector[0] - ovector[1]), (char *)(subject + ovector[1]); */
-    cout << "Run abandoned" << endl;
+    /* cout << */
+    /*     "\\K was used in an assertion to set the match start after its end.\n"; */
+    /*     /1* "From end to start the match was: %.*s\n", *1/ */
+    /*     /1* (int)(ovector[0] - ovector[1]), (char *)(subject + ovector[1]); *1/ */
+    /* cout << "Run abandoned" << endl; */
     pcre2_match_data_free(match_data);
     pcre2_code_free(re);
     pcre2_match_context_free(match_context);
