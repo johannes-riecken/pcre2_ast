@@ -1,7 +1,7 @@
 name: ClusterFuzzLite batch fuzzing
 on:
   push:
-    branches: [ master ]
+    branches: ["master"]
   pull_request:
     # The branches below must be a subset of the branches above
     branches: [ master ]
@@ -16,14 +16,15 @@ jobs:
       matrix:
         sanitizer:
         - address
+        # Override this with the sanitizers you want.
         - undefined
         - memory
-        - coverage
     steps:
     - name: Build Fuzzers (${{ matrix.sanitizer }})
       id: build
       uses: google/clusterfuzzlite/actions/build_fuzzers@v1
       with:
+        language: c++
         sanitizer: ${{ matrix.sanitizer }}
     - name: Run Fuzzers (${{ matrix.sanitizer }})
       id: run
@@ -31,8 +32,10 @@ jobs:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         fuzz-seconds: 300
-        mode: 'coverage'
+        mode: 'batch'
         sanitizer: ${{ matrix.sanitizer }}
+        # Optional but recommended: For storing certain artifacts from fuzzing.
+        # See later section on "Git repo for storage".
         storage-repo: https://${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com/johannes-riecken/pcre2_ast-storage.git
         storage-repo-branch: main   # Optional. Defaults to "main"
         storage-repo-branch-coverage: gh-pages  # Optional. Defaults to "gh-pages".
