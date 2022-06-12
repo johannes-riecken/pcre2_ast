@@ -10,6 +10,8 @@ add_executable(main main.cc pcre2_ast.cpp)
 
 add_library(pcre2_ast STATIC pcre2_ast.cpp)
 
+include_directories(/opt/homebrew/Cellar/pcre2/10.40/include/)
+
 target_link_libraries(pcre2_ast PUBLIC ${PCRE2_LIBRARY_RELEASE} pthread)
 target_link_libraries(main PUBLIC ${PCRE2_LIBRARY_RELEASE} pthread)
 

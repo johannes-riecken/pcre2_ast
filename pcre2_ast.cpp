@@ -138,17 +138,17 @@ string parse_json_string(string s) {
 }
 
 
-string to_json(unique_ptr<JsonValue> v) {
+string to_json(shared_ptr<JsonValue> v) {
     stringstream ret;
-    if (holds_alternative<map<string, unique_ptr<s>>>(*v)) {
+    if (holds_alternative<map<string, shared_ptr<s>>>(*v)) {
         ret << "{";
-        auto m = move(get<map<string, unique_ptr<s>>>(*v));
+        auto m = move(get<map<string, shared_ptr<s>>>(*v));
         auto times_run = 0;
         for (auto& kv : m) {
             if (times_run++) {
                 ret << ", ";
             }
-            ret << "\"" << kv.first << "\"" << ": " << to_json(make_unique<JsonValue>(move(kv.second->v)));
+            ret << "\"" << kv.first << "\"" << ": " << to_json(make_shared<JsonValue>(move(kv.second->v)));
         }
         ret << "}";
     } else if (holds_alternative<double>(*v)) {
@@ -157,15 +157,15 @@ string to_json(unique_ptr<JsonValue> v) {
     } else if (holds_alternative<string>(*v)) {
         auto str = move(get<string>(*v));
         ret << escape_string(str);
-    } else if (holds_alternative<vector<unique_ptr<s>>>(*v)) {
+    } else if (holds_alternative<vector<shared_ptr<s>>>(*v)) {
         ret << "[";
-        auto vec = move(get<vector<unique_ptr<s>>>(*v));
+        auto vec = move(get<vector<shared_ptr<s>>>(*v));
         auto times_run = 0;
         for (auto& e : vec) {
             if (times_run++) {
                 ret << ", ";
             }
-            ret << to_json(make_unique<JsonValue>(move(e->v)));
+            ret << to_json(make_shared<JsonValue>(move(e->v)));
         }
         ret << "]";
     } else if (holds_alternative<bool>(*v)) {
@@ -177,7 +177,7 @@ string to_json(unique_ptr<JsonValue> v) {
     return ret.str();
 }
 
-auto st = deque<unique_ptr<JsonValue>>{};
+auto st = deque<shared_ptr<JsonValue>>{};
 
 static int callout_handler(pcre2_callout_block *c, void *data) {
   if (is_debug) {
@@ -185,53 +185,53 @@ static int callout_handler(pcre2_callout_block *c, void *data) {
   }
   switch (c->callout_number) {
   case create_array: {
-    JsonValue val = vector<unique_ptr<s>> {};
-    st.push_back(make_unique<JsonValue>(move(val)));
+    JsonValue val = vector<shared_ptr<s>> {};
+    st.push_back(make_shared<JsonValue>(move(val)));
   } break;
   case push_back_array: {
-    unique_ptr<JsonValue> x = move(st.back());
+    shared_ptr<JsonValue> x = move(st.back());
     st.pop_back();
-    unique_ptr<JsonValue> vec_variant = move(st.back());
+    shared_ptr<JsonValue> vec_variant = move(st.back());
     st.pop_back();
-    vector<unique_ptr<s>> vec = move(get<vector<unique_ptr<s>>>(*vec_variant));
-    vec.push_back(unique_ptr<s>(new s { .v = move(*x) }));
-    st.push_back(make_unique<JsonValue>(move(vec)));
+    vector<shared_ptr<s>> vec = move(get<vector<shared_ptr<s>>>(*vec_variant));
+    vec.push_back(shared_ptr<s>(new s { .v = move(*x) }));
+    st.push_back(make_shared<JsonValue>(move(vec)));
   } break;
   case push_number: {
     auto begin_offset = c->offset_vector[c->capture_last * 2];
     auto end_offset   = c->offset_vector[c->capture_last * 2 + 1];
     string subject { (char*)c->subject };
     auto val_str = subject.substr(begin_offset, end_offset - begin_offset);
-    st.push_back(make_unique<JsonValue>(stod(val_str)));
+    st.push_back(make_shared<JsonValue>(stod(val_str)));
   } break;
   case push_string: {
     auto begin_offset = c->offset_vector[c->capture_last * 2];
     auto end_offset   = c->offset_vector[c->capture_last * 2 + 1];
     string subject { (char*)c->subject };
     JsonValue val_str = parse_json_string(subject.substr(begin_offset, end_offset - begin_offset));
-    st.push_back(make_unique<JsonValue>(move(val_str)));
+    st.push_back(make_shared<JsonValue>(move(val_str)));
   } break;
   case create_map: {
-    st.push_back(make_unique<JsonValue>(map<string, unique_ptr<s>> {}));
+    st.push_back(make_shared<JsonValue>(map<string, shared_ptr<s>> {}));
   } break;
   case push_back_map: {
-    unique_ptr<JsonValue> v = move(st.back());
+    shared_ptr<JsonValue> v = move(st.back());
     st.pop_back();
     string k = get<string>(*move(st.back()));
     st.pop_back();
-    map<string, unique_ptr<s>> m = move(get<map<string, unique_ptr<s>>>(*st.back()));
+    map<string, shared_ptr<s>> m = move(get<map<string, shared_ptr<s>>>(*st.back()));
     st.pop_back();
-    m[k] = unique_ptr<s> { new s { .v = move(*v) } };
-    st.push_back(make_unique<JsonValue>(move(m)));
+    m[k] = shared_ptr<s> { new s { .v = move(*v) } };
+    st.push_back(make_shared<JsonValue>(move(m)));
   } break;
   case push_true: {
-      st.push_back(move(make_unique<JsonValue>(true)));
+      st.push_back(move(make_shared<JsonValue>(true)));
   } break;
   case push_false: {
-    st.push_back(move(make_unique<JsonValue>(false)));
+    st.push_back(move(make_shared<JsonValue>(false)));
   } break;
   case push_null: {
-    st.push_back(move(make_unique<JsonValue>(monostate {})));
+    st.push_back(move(make_shared<JsonValue>(monostate {})));
   } break;
   default: {
     cout << "Exception is exceptional" << endl;
@@ -242,7 +242,7 @@ static int callout_handler(pcre2_callout_block *c, void *data) {
 }
 
 
-unique_ptr<JsonValue> from_json(const string& str) {
+shared_ptr<JsonValue> from_json(const string& str) {
   pcre2_match_context *match_context = pcre2_match_context_create(nullptr);
   pcre2_set_callout(match_context, callout_handler, nullptr);
   stringstream ss;

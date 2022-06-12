@@ -9,10 +9,10 @@ using namespace std;
 
 struct s;
 using JsonValue = variant<
-  map<string, unique_ptr<s> >,
+  map<string, shared_ptr<s> >,
   double,
   string,
-  vector<unique_ptr<s> >,
+  vector<shared_ptr<s> >,
   bool,
   monostate /*json null*/>;
 struct s {
@@ -21,6 +21,6 @@ struct s {
 };
 inline s::~s() = default;
 
-string to_json(unique_ptr<JsonValue> v);
+string to_json(shared_ptr<JsonValue> v);
 
-unique_ptr<JsonValue> from_json(const string& str);
+shared_ptr<JsonValue> from_json(const string& str);
