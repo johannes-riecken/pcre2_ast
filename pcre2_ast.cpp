@@ -12,6 +12,7 @@
 #include <vector>
 
 #include <pcre2.h>
+#include <queue>
 
 #include "pcre2_ast.hpp"
 
@@ -139,40 +140,54 @@ string parse_json_string(string s) {
 
 
 string to_json(shared_ptr<JsonValue> v) {
+    using QueueItem = variant<JsonValue, string>;
+    queue<QueueItem> q;
+    q.push(*v);
     stringstream ret;
-    if (holds_alternative<map<string, shared_ptr<s>>>(*v)) {
-        ret << "{";
-        auto m = move(get<map<string, shared_ptr<s>>>(*v));
-        auto times_run = 0;
-        for (auto& kv : m) {
-            if (times_run++) {
-                ret << ", ";
-            }
-            ret << "\"" << kv.first << "\"" << ": " << to_json(make_shared<JsonValue>(move(kv.second->v)));
+    while (!q.empty()) {
+        auto top = q.front();
+        q.pop();
+        if (holds_alternative<string>(top)) {
+            auto str = get<string>(top);
+            ret << str;
+            continue;
         }
-        ret << "}";
-    } else if (holds_alternative<double>(*v)) {
-        auto n = get<double>(*v);
-        ret << n;
-    } else if (holds_alternative<string>(*v)) {
-        auto str = move(get<string>(*v));
-        ret << escape_string(str);
-    } else if (holds_alternative<vector<shared_ptr<s>>>(*v)) {
-        ret << "[";
-        auto vec = move(get<vector<shared_ptr<s>>>(*v));
-        auto times_run = 0;
-        for (auto& e : vec) {
-            if (times_run++) {
-                ret << ", ";
+        JsonValue cur = get<JsonValue>(top);
+        if (holds_alternative<map<string, shared_ptr<s>>>(cur)) {
+            ret << "{";
+            auto m = move(get<map<string, shared_ptr<s>>>(cur));
+            auto times_run = 0;
+            for (auto& kv : m) {
+                if (times_run++) {
+                    q.push(", "s);
+                }
+                q.push("\"" + kv.first + "\"" + ": ");
+                q.push((kv.second->v));
             }
-            ret << to_json(make_shared<JsonValue>(move(e->v)));
+            q.push("}"s);
+        } else if (holds_alternative<double>(cur)) {
+            auto n = get<double>(cur);
+            ret << n;
+        } else if (holds_alternative<string>(cur)) {
+            auto str = move(get<string>(cur));
+            ret << escape_string(str);
+        } else if (holds_alternative<vector<shared_ptr<s>>>(cur)) {
+            ret << "[";
+            auto vec = move(get<vector<shared_ptr<s>>>(cur));
+            auto times_run = 0;
+            for (auto& e : vec) {
+                if (times_run++) {
+                    q.push(", "s);
+                }
+                q.push((e->v));
+            }
+            q.push("]"s);
+        } else if (holds_alternative<bool>(cur)) {
+            auto b = get<bool>(cur);
+            ret << (b ? "true" : "false");
+        } else if (holds_alternative<monostate>(cur)) {
+            ret << "null";
         }
-        ret << "]";
-    } else if (holds_alternative<bool>(*v)) {
-      auto b = get<bool>(*v);
-      ret << (b ? "true" : "false");
-    } else if (holds_alternative<monostate>(*v)) {
-      ret << "null";
     }
     return ret.str();
 }
