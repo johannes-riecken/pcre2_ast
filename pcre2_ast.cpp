@@ -139,7 +139,7 @@ string parse_json_string(string s) {
 }
 
 
-string to_json(shared_ptr<JsonValue> v) {
+string to_json(const shared_ptr<JsonValue>& v) {
     using QueueItem = variant<JsonValue, string>;
     queue<QueueItem> q;
     q.push(*v);
@@ -194,7 +194,7 @@ string to_json(shared_ptr<JsonValue> v) {
 
 auto st = deque<shared_ptr<JsonValue>>{};
 
-static int callout_handler(pcre2_callout_block *c, void *data) {
+static int callout_handler(pcre2_callout_block *c, [[maybe_unused]] void *data) {
   if (is_debug) {
     cout << command_to_string(static_cast<command>(c->callout_number)) << endl;
   }

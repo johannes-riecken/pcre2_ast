@@ -21,6 +21,6 @@ struct s {
 };
 inline s::~s() = default;
 
-string to_json(shared_ptr<JsonValue> v);
+string to_json(const shared_ptr<JsonValue>& v);
 
 shared_ptr<JsonValue> from_json(const string& str);
