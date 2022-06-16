@@ -21,16 +21,16 @@ constexpr bool is_debug = false;
 using namespace std;
 
 
-enum command {
-  create_array,
-  push_back_array,
-  push_number,
-  push_string,
-  create_map,
-  push_back_map,
-  push_true,
-  push_false,
-  push_null,
+enum command {  // comments are factor expressions
+  create_array,  // { }
+  push_back_array,  // suffix
+  push_number,  // 42
+  push_string,  // "string"
+  create_map,  //  H{ }
+  push_back_map,  // ?set-at value key assoc/f
+  push_true,  // t
+  push_false,  // f
+  push_null,  // null
 };
 
 string command_to_string(command c) {
