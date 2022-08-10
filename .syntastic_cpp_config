@@ -1,0 +1,2 @@
+-I /opt/homebrew/Cellar/pcre2/10.40/include
+-std=c++17
