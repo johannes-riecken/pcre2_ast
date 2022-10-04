@@ -1,0 +1,50 @@
+(*NO_AUTO_POSSESS)(*NO_DOTSTAR_ANCHOR)(*NO_START_OPT)
+\A (?&json_val) \z
+(?(DEFINE)
+(?<json_val>
+\s*
+(
+    (?&string)
+  |
+    (?&push_number)
+  |
+    (?&object)
+  |
+    (?&array)
+  |
+  true (?C6)
+|
+  false (?C7)
+|
+  null (?C8)
+)
+\s*
+)
+(?<string> 
+  (
+    "
+    (?:
+      [^\\"]+
+    |
+      \ ["\\/bfnrt]
+    )*
+    "
+  )
+(?C3)
+)
+(?<object> \{ (?C4) ( (?&key) : (?&value) (?C5)
+( , \s* (?&key) : (?&value) (?C5))* )? \} )
+(?<key> (?&string) )
+(?<value> (?&json_val) )
+(?<push_number>
+  (
+    -?
+    (?: 0 | [1-9]\d* )
+    (?: \. \d+ )?
+    (?: [eE] [-+]? \d+ )?
+  )
+  (?C2)
+)
+(?<array> \[ (?C0) (?: (?&json_val) (?C1)
+(?: , (?&json_val) (?C1))* )? \] )
+)
