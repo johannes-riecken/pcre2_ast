@@ -1,6 +1,9 @@
 #include "gtest/gtest.h"
 #include "pcre2_ast.hpp"
 #include <utility>
+#include <vector>
+#include <memory>
+#include <variant>
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc ,argv);
@@ -24,14 +27,18 @@ TEST(Pcre2AstTest, string) {
 /*       std::map<std::string, std::shared_ptr<s>>{{"foo"s, std::make_shared<s>(s{JsonValue{42}})}}); */
 /* } */
 
-/* TEST(Pcre2AstTest, array) { */
-/*   ASSERT_EQ(*from_json("[1,2,3]"s), (JsonValue{std::vector<std::shared_ptr<s>>{ */
-/*       { */
-/*       make_shared<s>(s{.v = JsonValue{1.0}}), */
-/*       make_shared<s>(s{.v = JsonValue{2.0}}), */
-/*       make_shared<s>(s{.v = JsonValue{3.0}}), */
-/*       } }})); */
-/* } */
+TEST(Pcre2AstTest, array) {
+  std::vector<std::shared_ptr<s>> got = std::get<std::vector<std::shared_ptr<s>>>(*from_json("[1,2,3]"s));
+  std::vector<std::shared_ptr<s>> want{
+      {
+      make_shared<s>(s{.v = JsonValue{1.0}}),
+      make_shared<s>(s{.v = JsonValue{2.0}}),
+      make_shared<s>(s{.v = JsonValue{3.0}}),
+      } };
+  ASSERT_EQ(got[0]->v, want[0]->v);
+  ASSERT_EQ(got[1]->v, want[1]->v);
+  ASSERT_EQ(got[2]->v, want[2]->v);
+}
 
 TEST(Pcre2AstTest, bool) {
   ASSERT_EQ(*from_json("true"s), JsonValue{true});
