@@ -59,7 +59,7 @@ TEST(from_json, map_with_many_entries) {
   ASSERT_EQ(got["bar"s]->v, want["bar"s]->v);
 }
 
-TEST(from_json, map_tested) {
+TEST(from_json, map_nested) {
   std::map<std::string, std::shared_ptr<s>> got = std::get<std::map<std::string, std::shared_ptr<s>>>(*from_json("{\"foo\":{\"bar\":42}}"s));
   std::map<std::string, std::shared_ptr<s>> want{
     {"foo"s, std::make_shared<s>(
@@ -72,4 +72,35 @@ TEST(from_json, map_tested) {
   auto got_value = std::get<std::map<std::string, std::shared_ptr<s>>>(got["foo"s]->v)["bar"s]->v;
   auto want_value = std::get<std::map<std::string, std::shared_ptr<s>>>(want["foo"s]->v)["bar"s]->v;
   ASSERT_EQ(got_value, want_value);
+}
+
+TEST(to_json, number) {
+  ASSERT_EQ(to_json(make_shared<JsonValue>(42.0)), "42");
+}
+
+TEST(to_json, string) {
+  ASSERT_EQ(to_json(make_shared<JsonValue>("foo"s)), "\"foo\"");
+}
+
+TEST(to_json, null) {
+  ASSERT_EQ(to_json(make_shared<JsonValue>(std::monostate{})), "null");
+}
+
+TEST(to_json, true) {
+  ASSERT_EQ(to_json(make_shared<JsonValue>(true)), "true");
+}
+
+TEST(to_json, map) {
+  std::shared_ptr<JsonValue> arg = std::make_shared<JsonValue>(JsonValue{std::map<std::string, std::shared_ptr<s>>{{"foo"s, std::make_shared<s>(s{.v = JsonValue{42.0}})}}});
+  ASSERT_EQ(to_json(arg), "{\"foo\": 42}");
+}
+
+TEST(to_json, array) {
+  std::vector<std::shared_ptr<s>> arg{
+      {
+      make_shared<s>(s{.v = JsonValue{1.0}}),
+      make_shared<s>(s{.v = JsonValue{2.0}}),
+      make_shared<s>(s{.v = JsonValue{3.0}}),
+      } };
+  ASSERT_EQ(to_json(make_shared<JsonValue>(JsonValue{arg})), "[1, 2, 3]");
 }
