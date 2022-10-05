@@ -7,8 +7,9 @@ find_library(PCRE2_LIBRARY_RELEASE NAMES pcre2-8 HINTS ${INSTALLED_LIB_PATH})
 
 find_library(GTEST_LIBRARY gtest)
 
-add_compile_options(-fsanitize=address -fsanitize=undefined)
-add_link_options(-fsanitize=address -fsanitize=undefined)
+## This fails with CodeQL build
+# add_compile_options(-fsanitize=address -fsanitize=undefined)
+# add_link_options(-fsanitize=address -fsanitize=undefined)
 
 enable_testing()
 
