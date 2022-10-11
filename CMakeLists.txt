@@ -26,7 +26,7 @@ add_library(pcre2_ast STATIC pcre2_ast.cpp)
 include_directories(/opt/homebrew/Cellar/pcre2/10.40/include/)
 
 target_link_libraries(pcre2_ast PUBLIC ${PCRE2_LIBRARY_RELEASE} pthread)
-target_link_libraries(pcre2_ast_test PUBLIC ${PCRE2_LIBRARY_RELEASE} gtest pthread)
+target_link_libraries(pcre2_ast_test PUBLIC ${PCRE2_LIBRARY_RELEASE} gtest pthread cpp)
 target_link_libraries(main PUBLIC ${PCRE2_LIBRARY_RELEASE} pthread)
 
 target_compile_features(pcre2_ast PUBLIC cxx_std_17)
