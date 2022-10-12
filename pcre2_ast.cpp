@@ -2,6 +2,7 @@
 #define PCRE2_CODE_UNIT_WIDTH 8
 #include <array>
 #include <cstring>
+#include <iomanip>
 #include <iostream>
 #include <map>
 #include <memory>
@@ -144,6 +145,7 @@ string to_json(const shared_ptr<JsonValue>& v) {
     queue<QueueItem> q;
     q.push(*v);
     stringstream ret;
+    ret << fixed << setprecision(0);
     while (!q.empty()) {
         auto top = q.front();
         q.pop();
