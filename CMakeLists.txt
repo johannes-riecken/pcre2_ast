@@ -15,7 +15,7 @@ find_library(GTEST_LIBRARY gtest)
 # add_executable(pcre2_ast_test pcre2_ast_test.cpp)
 # include(GoogleTest)
 # gtest_discover_tests(pcre2_ast_test)
-# target_link_libraries(pcre2_ast_test PUBLIC ${PCRE2_LIBRARY_RELEASE} gtest pcre2_ast pthread c++)
+# target_link_libraries(pcre2_ast_test PUBLIC ${PCRE2_LIBRARY_RELEASE} ${GTEST_LIBRARY} pcre2_ast pthread c++)
 # target_compile_features(pcre2_ast_test PUBLIC cxx_std_17)
 
 # add the executable
@@ -23,7 +23,9 @@ add_executable(main main.cc)
 
 add_library(pcre2_ast pcre2_ast.cpp)
 
-# include_directories(/opt/homebrew/Cellar/pcre2/10.40/include/)
+include_directories(/opt/homebrew/Cellar/pcre2/10.40/include/)
+include_directories(/usr/local/Cellar/pcre2/10.40/include/)
+include_directories(/usr/local/Cellar/googletest/1.12.1_1/include/)
 
 target_link_libraries(pcre2_ast PUBLIC ${PCRE2_LIBRARY_RELEASE} pthread c++)
 target_link_libraries(main PUBLIC ${PCRE2_LIBRARY_RELEASE} pthread c++ pcre2_ast)
