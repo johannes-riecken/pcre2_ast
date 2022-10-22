@@ -1,9 +1,7 @@
 #!/bin/bash -eu
 
 # build project
-mkdir build
-cd build
-cmake .. && make
+cmake -S . -B build && ( cd build && make )
 
 # build fuzzers
 $CXX $CXXFLAGS -std=c++17 \
