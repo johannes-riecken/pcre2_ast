@@ -60,7 +60,7 @@ string command_to_string(command c) {
 }
 
 string escape_string(const string& s) {
-    stringstream ret;
+    stringstream ret{};
     ret << "\"";
     for (char c : s) {
         switch (c) {
@@ -96,7 +96,7 @@ string escape_string(const string& s) {
 }
 
 string parse_json_string(string s) {
-    stringstream ret;
+    stringstream ret{};
     s = s.substr(1, s.size() - 2); // remove quotes
 
     bool after_backslash = false;
@@ -144,7 +144,7 @@ string to_json(const shared_ptr<JsonValue>& v) {
     using QueueItem = variant<JsonValue, string>;
     queue<QueueItem> q;
     q.push(*v);
-    stringstream ret;
+    stringstream ret{};
     ret << fixed << setprecision(0);
     while (!q.empty()) {
         auto top = q.front();
@@ -262,7 +262,7 @@ static int callout_handler(pcre2_callout_block *c, [[maybe_unused]] void *data) 
 shared_ptr<JsonValue> from_json(const string& str) {
   pcre2_match_context *match_context = pcre2_match_context_create(nullptr);
   pcre2_set_callout(match_context, callout_handler, nullptr);
-  stringstream ss;
+  stringstream ss{};
   ss << "(*NO_AUTO_POSSESS)(*NO_DOTSTAR_ANCHOR)(*NO_START_OPT)"
         "\\A (?&json_val) \\z"
         "(?(DEFINE)"
