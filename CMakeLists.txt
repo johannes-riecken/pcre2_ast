@@ -30,6 +30,11 @@ include_directories(/usr/local/Cellar/googletest/1.12.1_1/include/)
 target_link_libraries(pcre2_ast PUBLIC ${PCRE2_LIBRARY_RELEASE} pthread c++)
 target_link_libraries(main PUBLIC ${PCRE2_LIBRARY_RELEASE} pthread c++ pcre2_ast)
 
+# make sure the executables can access the files in res/
+add_custom_command(TARGET pcre2_ast_test PRE_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/res/ $<TARGET_FILE_DIR:pcre2_ast_test>)
+
 target_compile_features(pcre2_ast PUBLIC cxx_std_17)
 target_compile_features(main PUBLIC cxx_std_17)
 
