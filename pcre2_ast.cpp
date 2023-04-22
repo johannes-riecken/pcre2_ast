@@ -25,7 +25,7 @@ constexpr bool is_debug = false;
 using namespace std;
 
 
-enum command {  // comments are factor expressions
+enum class command {  // comments are factor expressions
     create_array,  // { }
     push_back_array,  // suffix
     push_number,  // 42
@@ -39,23 +39,23 @@ enum command {  // comments are factor expressions
 
 string command_to_string(command c) {
     switch (c) {
-        case create_array:
+        case command::create_array:
             return "create_array";
-        case push_back_array:
+        case command::push_back_array:
             return "push_back_array";
-        case push_number:
+        case command::push_number:
             return "push_number";
-        case push_string:
+        case command::push_string:
             return "push_string";
-        case create_map:
+        case command::create_map:
             return "create_map";
-        case push_back_map:
+        case command::push_back_map:
             return "push_back_map";
-        case push_true:
+        case command::push_true:
             return "push_true";
-        case push_false:
+        case command::push_false:
             return "push_false";
-        case push_null:
+        case command::push_null:
             return "push_null";
         default:
             __builtin_trap();
@@ -203,13 +203,13 @@ static int callout_handler(pcre2_callout_block *c, [[maybe_unused]] void *data) 
     if (is_debug) {
         cout << command_to_string(static_cast<command>(c->callout_number)) << endl;
     }
-    switch (c->callout_number) {
-        case create_array: {
+    switch (static_cast<command>(c->callout_number)) {
+        case command::create_array: {
             JsonValue val = vector<shared_ptr<s>>{};
             st.push_back(make_shared<JsonValue>(move(val)));
         }
             break;
-        case push_back_array: {
+        case command::push_back_array: {
             shared_ptr<JsonValue> x = move(st.back());
             st.pop_back();
             shared_ptr<JsonValue> vec_variant = move(st.back());
@@ -219,7 +219,7 @@ static int callout_handler(pcre2_callout_block *c, [[maybe_unused]] void *data) 
             st.push_back(make_shared<JsonValue>(move(vec)));
         }
             break;
-        case push_number: {
+        case command::push_number: {
             auto begin_offset = c->offset_vector[c->capture_last * 2];
             auto end_offset = c->offset_vector[c->capture_last * 2 + 1];
             string subject{(char *) c->subject};
@@ -227,7 +227,7 @@ static int callout_handler(pcre2_callout_block *c, [[maybe_unused]] void *data) 
             st.push_back(make_shared<JsonValue>(stod(val_str)));
         }
             break;
-        case push_string: {
+        case command::push_string: {
             auto begin_offset = c->offset_vector[c->capture_last * 2];
             auto end_offset = c->offset_vector[c->capture_last * 2 + 1];
             string subject{(char *) c->subject};
@@ -235,11 +235,11 @@ static int callout_handler(pcre2_callout_block *c, [[maybe_unused]] void *data) 
             st.push_back(make_shared<JsonValue>(move(val_str)));
         }
             break;
-        case create_map: {
+        case command::create_map: {
             st.push_back(make_shared<JsonValue>(map<string, shared_ptr<s>>{}));
         }
             break;
-        case push_back_map: {
+        case command::push_back_map: {
             shared_ptr<JsonValue> v = move(st.back());
             st.pop_back();
             string k = get<string>(*move(st.back()));
@@ -250,15 +250,15 @@ static int callout_handler(pcre2_callout_block *c, [[maybe_unused]] void *data) 
             st.push_back(make_shared<JsonValue>(move(m)));
         }
             break;
-        case push_true: {
+        case command::push_true: {
             st.push_back(move(make_shared<JsonValue>(true)));
         }
             break;
-        case push_false: {
+        case command::push_false: {
             st.push_back(move(make_shared<JsonValue>(false)));
         }
             break;
-        case push_null: {
+        case command::push_null: {
             st.push_back(move(make_shared<JsonValue>(monostate{})));
         }
             break;
