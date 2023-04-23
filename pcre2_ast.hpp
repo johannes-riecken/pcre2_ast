@@ -9,7 +9,7 @@ using namespace std;
 
 struct s;
 using JsonValue = variant<
-  map<string, shared_ptr<s> >,
+  map<string, shared_ptr<s>, less<> >,
   double,
   string,
   vector<shared_ptr<s> >,

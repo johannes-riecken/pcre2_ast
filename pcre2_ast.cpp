@@ -14,7 +14,6 @@
 #include <variant>
 #include <vector>
 
-#include <pcre2.h>
 #include <queue>
 #include <unistd.h>
 
@@ -38,24 +37,25 @@ enum class command {  // comments are factor expressions
 };
 
 string command_to_string(command c) {
+    using enum command;
     switch (c) {
-        case command::create_array:
+        case create_array:
             return "create_array";
-        case command::push_back_array:
+        case push_back_array:
             return "push_back_array";
-        case command::push_number:
+        case push_number:
             return "push_number";
-        case command::push_string:
+        case push_string:
             return "push_string";
-        case command::create_map:
+        case create_map:
             return "create_map";
-        case command::push_back_map:
+        case push_back_map:
             return "push_back_map";
-        case command::push_true:
+        case push_true:
             return "push_true";
-        case command::push_false:
+        case push_false:
             return "push_false";
-        case command::push_null:
+        case push_null:
             return "push_null";
         default:
             __builtin_trap();
@@ -68,27 +68,28 @@ string escape_string(const string &s) {
     for (char c: s) {
         switch (c) {
             case '"':
-                ret << "\\\"";
+                ret << R"(\")";
                 break;
             case '\\':
-                ret << "\\\\";
+                ret << R"(\\)";
                 break;
             case '/':
-                ret << "\\/";
+                ret << R"(\/)";
                 break;
             case '\b':
-                ret << "\\b";
+                ret << R"(\b)";
                 break;
             case '\f':
-                ret << "\\f";
+                ret << R"(\f)";
                 break;
             case '\n':
-                ret << "\\n";
+                ret << R"(\n)";
+                break;
             case '\r':
-                ret << "\\r";
+                ret << R"(\r)";
                 break;
             case '\t':
-                ret << "\\t";
+                ret << R"(\t)";
                 break;
             default:
                 ret << c;
@@ -107,10 +108,10 @@ string parse_json_string(string s) {
         if (after_backslash) {
             switch (c) {
                 case '"':
-                    ret << "\"";
+                    ret << R"(")";
                     break;
                 case '\\':
-                    ret << "\\";
+                    ret << R"(\)";
                     break;
                 case '/':
                     ret << "/";
@@ -120,6 +121,7 @@ string parse_json_string(string s) {
                     break;
                 case 'f':
                     ret << "\f";
+                    break;
                 case 'n':
                     ret << "\n";
                     break;
@@ -146,30 +148,30 @@ string parse_json_string(string s) {
 string to_json(const shared_ptr<JsonValue> &v) {
     using QueueItem = variant<JsonValue, string>;
     queue<QueueItem> q;
-    q.push(*v);
+    q.emplace(*v);
     stringstream ret{};
     ret << fixed << setprecision(0);
     while (!q.empty()) {
         auto top = q.front();
         q.pop();
         if (holds_alternative<string>(top)) {
-            auto str = get<string>(top);
+            const auto& str = get<string>(top);
             ret << str;
             continue;
         }
         JsonValue cur = get<JsonValue>(top);
-        if (holds_alternative<map<string, shared_ptr<s>>>(cur)) {
+        if (holds_alternative<map<string, shared_ptr<s>, less<>>>(cur)) {
             ret << "{";
-            auto m = move(get<map<string, shared_ptr<s>>>(cur));
+            auto m = move(get<map<string, shared_ptr<s>, less<>>>(cur));
             auto times_run = 0;
-            for (auto &kv: m) {
+            for (const auto& [k, vv]: m) {
                 if (times_run++) {
-                    q.push(", "s);
+                    q.emplace(", "s);
                 }
-                q.push("\"" + kv.first + "\"" + ": ");
-                q.push((kv.second->v));
+                q.emplace("\"" + k + "\"" + ": ");
+                q.emplace(vv->v);
             }
-            q.push("}"s);
+            q.emplace("}"s);
         } else if (holds_alternative<double>(cur)) {
             auto n = get<double>(cur);
             ret << n;
@@ -180,13 +182,13 @@ string to_json(const shared_ptr<JsonValue> &v) {
             ret << "[";
             auto vec = move(get<vector<shared_ptr<s>>>(cur));
             auto times_run = 0;
-            for (auto &e: vec) {
+            for (const auto &e: vec) {
                 if (times_run++) {
-                    q.push(", "s);
+                    q.emplace(", "s);
                 }
-                q.push((e->v));
+                q.emplace(e->v);
             }
-            q.push("]"s);
+            q.emplace("]"s);
         } else if (holds_alternative<bool>(cur)) {
             auto b = get<bool>(cur);
             ret << (b ? "true" : "false");
@@ -199,17 +201,20 @@ string to_json(const shared_ptr<JsonValue> &v) {
 
 auto st = deque<shared_ptr<JsonValue>>{};
 
+#include <pcre2.h>
+
 static int callout_handler(pcre2_callout_block *c, [[maybe_unused]] void *data) {
     if (is_debug) {
         cout << command_to_string(static_cast<command>(c->callout_number)) << endl;
     }
+    using enum command;
     switch (static_cast<command>(c->callout_number)) {
-        case command::create_array: {
+        case create_array: {
             JsonValue val = vector<shared_ptr<s>>{};
             st.push_back(make_shared<JsonValue>(move(val)));
         }
             break;
-        case command::push_back_array: {
+        case push_back_array: {
             shared_ptr<JsonValue> x = move(st.back());
             st.pop_back();
             shared_ptr<JsonValue> vec_variant = move(st.back());
@@ -219,7 +224,7 @@ static int callout_handler(pcre2_callout_block *c, [[maybe_unused]] void *data) 
             st.push_back(make_shared<JsonValue>(move(vec)));
         }
             break;
-        case command::push_number: {
+        case push_number: {
             auto begin_offset = c->offset_vector[c->capture_last * 2];
             auto end_offset = c->offset_vector[c->capture_last * 2 + 1];
             string subject{(char *) c->subject};
@@ -227,7 +232,7 @@ static int callout_handler(pcre2_callout_block *c, [[maybe_unused]] void *data) 
             st.push_back(make_shared<JsonValue>(stod(val_str)));
         }
             break;
-        case command::push_string: {
+        case push_string: {
             auto begin_offset = c->offset_vector[c->capture_last * 2];
             auto end_offset = c->offset_vector[c->capture_last * 2 + 1];
             string subject{(char *) c->subject};
@@ -235,30 +240,30 @@ static int callout_handler(pcre2_callout_block *c, [[maybe_unused]] void *data) 
             st.push_back(make_shared<JsonValue>(move(val_str)));
         }
             break;
-        case command::create_map: {
-            st.push_back(make_shared<JsonValue>(map<string, shared_ptr<s>>{}));
+        case create_map: {
+            st.push_back(make_shared<JsonValue>(map<string, shared_ptr<s>, less<>>{}));
         }
             break;
-        case command::push_back_map: {
+        case push_back_map: {
             shared_ptr<JsonValue> v = move(st.back());
             st.pop_back();
             string k = get<string>(*move(st.back()));
             st.pop_back();
-            map<string, shared_ptr<s>> m = move(get<map<string, shared_ptr<s>>>(*st.back()));
+            map<string, shared_ptr<s>, less<>> m = move(get<map<string, shared_ptr<s>, less<>>>(*st.back()));
             st.pop_back();
             m[k] = shared_ptr<s>{new s{.v = move(*v)}};
             st.push_back(make_shared<JsonValue>(move(m)));
         }
             break;
-        case command::push_true: {
+        case push_true: {
             st.push_back(move(make_shared<JsonValue>(true)));
         }
             break;
-        case command::push_false: {
+        case push_false: {
             st.push_back(move(make_shared<JsonValue>(false)));
         }
             break;
-        case command::push_null: {
+        case push_null: {
             st.push_back(move(make_shared<JsonValue>(monostate{})));
         }
             break;
