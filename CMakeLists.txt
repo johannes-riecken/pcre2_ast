@@ -16,7 +16,7 @@ add_executable(pcre2_ast_test pcre2_ast_test.cpp)
 include(GoogleTest)
 gtest_discover_tests(pcre2_ast_test)
 target_link_libraries(pcre2_ast_test PUBLIC ${PCRE2_LIBRARY_RELEASE} ${GTEST_LIBRARY} pcre2_ast pthread c++)
-target_compile_features(pcre2_ast_test PUBLIC cxx_std_17)
+target_compile_features(pcre2_ast_test PUBLIC cxx_std_20)
 
 # add the executable
 add_executable(main main.cc)
@@ -35,6 +35,6 @@ add_custom_command(TARGET pcre2_ast_test PRE_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_SOURCE_DIR}/res/ $<TARGET_FILE_DIR:pcre2_ast_test>)
 
-target_compile_features(pcre2_ast PUBLIC cxx_std_17)
-target_compile_features(main PUBLIC cxx_std_17)
+target_compile_features(pcre2_ast PUBLIC cxx_std_20)
+target_compile_features(main PUBLIC cxx_std_20)
 
