@@ -1,0 +1,84 @@
+// Inspired by https://www.perlmonks.org/?node_id=995856
+is_debug: bool = false;
+
+create_array: int = 0;
+push_back_array: int = 1;
+push_number: int = 2;
+push_string: int = 3;
+create_map: int = 4;
+push_back_map: int = 5;
+push_true: int = 6;
+push_false: int = 7;
+push_null: int = 8;
+
+command_to_string: (c: command) -> std::string = {
+  if (c == create_array) {
+    return "create_array";
+  }
+  if (c == push_back_array) {
+    return "push_back_array";
+  }
+  if (c == push_number) {
+    return "push_number";
+  }
+  if (c == push_string) {
+    return "push_string";
+  }
+  if (c == create_map) {
+    return "create_map";
+  }
+  if (c == push_back_map) {
+    return "push_back_map";
+  }
+  if (c == push_true) {
+    return "push_true";
+  }
+  if (c == push_false) {
+    return "push_false";
+  }
+  if (c == push_null) {
+    return "push_null";
+  }
+  __builtin_trap();
+}
+
+escape_string: (inout s: const std::string) -> std::string = {
+    ret: std::stringstream = ();
+    ret << "\"";
+    for s do :(inout c: const char) = {
+        if (c == '"') {
+            ret << "\\\"";
+            break;
+        }
+        if (c == '\\') {
+            ret << "\x5c\x5c";
+            break;
+        }
+        if (c == '/') {
+            ret << "\\/";
+            break;
+        }
+        if (c == '\b') {
+            ret << "\\b";
+            break;
+        }
+        if (c == '\f') {
+            ret << "\\f";
+            break;
+        }
+        if (c == '\n') {
+            ret << "\\n";
+        }
+        if (c == '\r') {
+            ret << "\\r";
+            break;
+        }
+        if (c == '\t') {
+            ret << "\\t";
+            break;
+        }
+        ret << c;
+    }
+    ret << "\"";
+    return ret.str();
+}

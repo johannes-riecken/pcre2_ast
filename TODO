@@ -1,0 +1,1 @@
+clang-tidy -checks=readability-qualified-auto pcre2_ast.cpp
