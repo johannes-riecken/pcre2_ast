@@ -1,4 +1,7 @@
 // Inspired by https://www.perlmonks.org/?node_id=995856
+// To run on Compiler Explorer, click on the Libraries button to add PCRE2, then
+// add the -lpcre2-8 flag. You'll have to inline res/regex.txt and
+// pcre2_ast.hpp.
 #define PCRE2_CODE_UNIT_WIDTH 8
 
 #include <array>
