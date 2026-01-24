@@ -2,23 +2,15 @@
 // To run on Compiler Explorer, click on the Libraries button to add PCRE2, then
 // add the -lpcre2-8 flag. You'll have to inline res/regex.txt and
 // pcre2_ast.hpp.
+//
+// g++-15 -std=c++23 -fmodules-ts \
+//     -I/opt/homebrew/include \
+//     -x c++-system-header pcre2.h
+// g++-15 -I/opt/homebrew/include -std=c++23 -fmodules pcre2_ast.cpp std.o -lpcre2-8
+
 #define PCRE2_CODE_UNIT_WIDTH 8
 
-#include <array>
-#include <cstring>
-#include <fstream>
-#include <iomanip>
-#include <iostream>
-#include <map>
-#include <memory>
-#include <sstream>
-#include <stack>
-#include <string>
-#include <variant>
-#include <vector>
-
-#include <queue>
-#include <unistd.h>
+import std;
 
 #include "pcre2_ast.hpp"
 
@@ -204,7 +196,7 @@ string to_json(const shared_ptr<JsonValue> &v) {
 
 auto st = deque<shared_ptr<JsonValue>>{};
 
-#include <pcre2.h>
+import <pcre2.h>;
 
 static int callout_handler(pcre2_callout_block *c, [[maybe_unused]] void *data) {
     if (is_debug) {

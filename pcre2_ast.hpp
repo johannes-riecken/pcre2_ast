@@ -1,9 +1,4 @@
-#include <map>
-#include <memory>
-#include <string>
-#include <utility>
-#include <variant>
-#include <vector>
+import std;
 
 using namespace std;
 
