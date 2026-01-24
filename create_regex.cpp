@@ -1,5 +1,8 @@
-#include <iostream>
-#include <sstream>
+// compile with:
+// g++-15 -std=c++23 -fmodules-ts -c /opt/homebrew/Cellar/gcc/15.2.0/include/c++/15/bits/std.cc
+// g++-15 -fmodules -std=c++23 create_regex.cpp std.o
+
+import std;
 
 enum command {     // comments are factor expressions
   create_array,    // { }
